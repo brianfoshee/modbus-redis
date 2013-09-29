@@ -14,12 +14,19 @@
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <modbus.h>
 #include "hiredis.h"
 
 #define SUNSAVERMPPT    0x01	/* MODBUS Address of the SunSaver MPPT */
 #define SERIALPORT      "/dev/ttyUSB0"
+
+static bool running = true;
+
+void termHandler(int dummy) {
+  running = false;
+}
 
 // Globals
 redisContext *c;
@@ -59,22 +66,27 @@ void modbus_conn(void) {
       modbus_free(ctx);
       exit(-1);
   }
+  fprintf(stdout, "Modbus connected\n");
 }
 
 void modbus_disconnect(void) {
 	/* Close the MODBUS connection */
   modbus_close(ctx);
   modbus_free(ctx);
+  fprintf(stdout, "Modbus Disconnected\n");
 }
 
-void read_data(uint16_t *data) {
+/* WARNING: caller is responsible for free()ing return value! */
+uint16_t * read_data() {
 	/* Read the RAM Registers */
   int rc;
+  uint16_t *data = malloc(sizeof(uint16_t) * 50);
 	rc = modbus_read_registers(ctx, 0x0008, 45, data);
 	if (rc == -1) {
 		fprintf(stderr, "%s\n", modbus_strerror(errno));
 		exit(-1);
 	}
+  return data;
 }
 
 /* WARNING: caller is responsible for free()ing return value! */
@@ -90,23 +102,47 @@ void setData(char *key, float val) {
   char *num = numToStr(val);
 
   reply = redisCommand(c ,"SET %s:%d %s",key, t, num);
-  printf("SET %s:%d %s\n",key, t, reply->str);
+  printf("SET %s:%d to %s %s\n",key, t, num, reply->str);
 
   freeReplyObject(reply);
   free(num);
 }
 
+void handleData(uint16_t *);
+
 int main()
 {
-  uint16_t data[50];
+  signal(SIGINT, termHandler);
+
+  uint16_t *data;
 
   redis_conn();
 
   modbus_conn();
 
-  read_data(data);
+  while(running) {
+    data = read_data();
+
+    handleData(data);
+
+    sleep(5);
+  }
 
   modbus_disconnect();
+
+  redisFree(c);
+
+	return 0;
+}
+
+uint16_t * uintdup(uint16_t const * src, size_t len)
+{
+   uint16_t * p = malloc(len * sizeof(uint16_t));
+   memcpy(p, src, len * sizeof(uint16_t));
+   return p;
+}
+
+void handleData(uint16_t *data) {
 
   // Voltage measured directly at the battery terminal
   setData("adc_vb_f", data[0] * 100.0 / 32768.0);
@@ -188,7 +224,5 @@ int main()
   // Total load amp hours today (resets after dark)
 	setData("Ahl_daily", data[38]*0.1);
 
-  redisFree(c);
-
-	return 0;
+  free(data);
 }
