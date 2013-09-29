@@ -1,0 +1,12 @@
+[Unit]
+Description=Sunsaver data collector
+Requires=redis.service
+After=redis.service
+After=getty@ttyAMA0.service
+
+[Service]
+Type=simple
+ExecStart=/root/sunsaver/sunsaver
+
+[Install]
+WantedBy=multi-user.target
