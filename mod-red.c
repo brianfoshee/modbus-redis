@@ -24,7 +24,7 @@
 
 static bool running = true;
 
-void termHandler(int dummy) {
+void termHandler(int dum) {
   running = false;
 }
 
