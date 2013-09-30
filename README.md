@@ -11,6 +11,7 @@ Basis of the modbus from [this blog post] [tom-blog].
 Work to improve this:
 
 - Send data to an app on Heroku (collecting every 5 seconds generates a bunch of Redis keys)
+  - [Sinatra app for this here] [solar-collector]
 - Visualize with D3 (realtime and archived)
 - Clean up mod-red.c
 - Refactor mod-red.c
@@ -24,3 +25,5 @@ Work to improve this:
 [libmod]: https://github.com/stephane/libmodbus
 
 [my-blog]: http://www.gingilipino.com/brian/solar-data-collection.html
+
+[solar-collector]: https://github.com/crakalakin/solar-collector
