@@ -39,6 +39,7 @@ tmpfs   /tmp         tmpfs   nodev,nosuid,size=2G          0  0
 - libmodbus
 - hiredis
 - ldconfig
+
 ```
 vim /etc/ld.so.conf.d/libc.conf
  # add this: /usr/local/lib
