@@ -9,9 +9,13 @@ cma_lwm=16
 cma_hwm=32
 cma_offline_start=16
 
+# Allows rpi camera to work
 start_file=start_x.elf
 fixup_file=fixup_x.dat
 ```
+
+- Resize the root partition (updated for 07-22 build)
+  - [instructions](http://jan.alphadev.net/post/53594241659/growing-the-rpi-root-partition)
 
 - Setup a swapfile
 
@@ -36,8 +40,8 @@ tmpfs   /tmp         tmpfs   nodev,nosuid,size=2G          0  0
  - automake, autoconf, libtool, pkg-config, make
  - gcc
  - zsh
-- libmodbus
-- hiredis
+- [libmodbus](https://github.com/stephane/libmodbus)
+- [hiredis](https://github.com/redis/hiredis)
 - ldconfig
 
 ```
@@ -52,5 +56,4 @@ ldconfig
   - `wpa_passphrase SSID password`
   -  In /etc/netctl/wlan--SSID Replace value in Key= with returned value of psk in above command, adding \" to the beginning
   - `netctl start wlan0-SSID`
-  - `systemctl enable netctl-ifplugd@wlan0.service`
   - `netctl enable wlan0-SSID`
