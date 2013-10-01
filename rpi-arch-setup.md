@@ -22,6 +22,7 @@ mkswap /swapfile
 swapon /swapfile
 # Edit /etc/fstab with
 /swapfile none swap defaults 0 0
+tmpfs   /tmp         tmpfs   nodev,nosuid,size=2G          0  0
 ```
 
 - Synchronize package databases
