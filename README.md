@@ -1,12 +1,14 @@
 [Blog post] [my-blog]
 
-Scratch pad for storing data read from a Morningstar Sunsaver MPPT and storing it in Redis.
+Reading data from a Morningstar Sunsaver MPPT and storing it in Redis.
 
 Starting point for what will be a system to monitor and view solar/charging data.
 
 This runs on a Raspberry Pi. Requires [hiredis] [hired] and [libmodbus] [libmod].
 
 Basis of the modbus from [this blog post] [tom-blog].
+
+To setup a Raspberry Pi with Arch Linux see [rpi-arch-setup] [arch-setup]
 
 Work to improve this:
 
@@ -27,3 +29,5 @@ Work to improve this:
 [my-blog]: http://www.gingilipino.com/brian/solar-data-collection.html
 
 [solar-collector]: https://github.com/crakalakin/solar-collector
+
+[arch-setup]: https://github.com/crakalakin/modbus-redis/blob/master/rpi-arch-setup.md
