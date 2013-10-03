@@ -1,9 +1,7 @@
 /*
  *  Reads in data from a Sunsaver MPPT charge controller, stores to Redis.
  *  Compile with: cc -I/usr/local/include/modbus -I/usr/local/include/hiredis \
-                     -L/usr/local/lib -lmodbus -lhiredis  sunsaver.c -o sunsaver
- *
- *
+                     -L/usr/local/lib -lmodbus -lhiredis  mod-red.c -o mod-red
  */
 
 #include <stdio.h>
@@ -14,27 +12,64 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#include <modbus.h>
-#include "hiredis.h"
+#include <modbus/modbus.h>
+#include <hiredis/hiredis.h>
+#include <json-c/json.h>
 
-#define SUNSAVERMPPT    0x01	/* MODBUS Address of the SunSaver MPPT */
-#define SERIALPORT      "/dev/ttyUSB0"
+#define SUNSAVERMPPT    0x01           // MODBUS address
+#define SERIALPORT      "/dev/ttyUSB0" // SerialPort address
+#define REDIS_SERVER    "127.0.0.1"    // Redis server host
+#define REDIS_PORT      6379           // Redis server port
 
+// Global Vars
+redisContext *c;
 static bool running = true;
 
-void termHandler(int dum) {
-  running = false;
+// Method Definitions
+void redis_conn(void);
+void redis_disconn(void);
+modbus_t * modbus_conn(void);
+void modbus_disconnect(modbus_t *ctx);
+uint16_t * read_data(modbus_t *ctx);
+char * numToStr(float num);
+void setData(char *key, float val, int t);
+void handleData(uint16_t *, int t);
+void termHandler(int dum);
+
+int main()
+{
+  signal(SIGINT, termHandler);
+
+  uint16_t *data;
+  modbus_t *ctx;
+
+  redis_conn();
+
+  ctx = modbus_conn();
+
+  int t;
+  while(running) {
+    t = (int)time(NULL);
+
+    data = read_data(ctx);
+
+    handleData(data, t);
+
+    sleep(5);
+  }
+
+  modbus_disconnect(ctx);
+
+  redis_disconn();
+
+	return 0;
 }
 
-// Globals
-redisContext *c;
-modbus_t *ctx;
-
 void redis_conn(void) {
-  const char *hostname = "127.0.0.1";
-  int port = 6379;
+  const char *hostname = REDIS_SERVER;
+  int port = REDIS_PORT;
 
-  struct timeval timeout = { 1, 500000 }; // 1.5 seconds
+  struct timeval timeout = { 1, 500000 };
   c = redisConnectWithTimeout(hostname, port, timeout);
   if (c == NULL || c->err) {
     if (c) {
@@ -47,9 +82,13 @@ void redis_conn(void) {
   }
 }
 
-void modbus_conn(void) {
-	/* Set up a new MODBUS context */
-	ctx = modbus_new_rtu(SERIALPORT, 9600, 'N', 8, 2);	/* Add the appropriate path to your serial port */
+void redis_disconn(void) {
+  redisFree(c);
+}
+
+modbus_t * modbus_conn(void) {
+  modbus_t *ctx;
+	ctx = modbus_new_rtu(SERIALPORT, 9600, 'N', 8, 2);
 	if (ctx == NULL) {
 		fprintf(stderr, "Unable to create the libmodbus context\n");
 		exit(-1);
@@ -65,17 +104,17 @@ void modbus_conn(void) {
       exit(-1);
   }
   fprintf(stdout, "Modbus connected\n");
+  return ctx;
 }
 
-void modbus_disconnect(void) {
-	/* Close the MODBUS connection */
+void modbus_disconnect(modbus_t *ctx) {
   modbus_close(ctx);
   modbus_free(ctx);
   fprintf(stdout, "Modbus Disconnected\n");
 }
 
 /* WARNING: caller is responsible for free()ing return value! */
-uint16_t * read_data() {
+uint16_t * read_data(modbus_t *ctx) {
 	/* Read the RAM Registers */
   int rc;
   uint16_t *data = malloc(sizeof(uint16_t) * 50);
@@ -103,36 +142,6 @@ void setData(char *key, float val, int t) {
 
   freeReplyObject(reply);
   free(num);
-}
-
-void handleData(uint16_t *, int t);
-
-int main()
-{
-  signal(SIGINT, termHandler);
-
-  uint16_t *data;
-
-  redis_conn();
-
-  modbus_conn();
-
-  int t;
-  while(running) {
-    t = (int)time(NULL);
-
-    data = read_data();
-
-    handleData(data, t);
-
-    sleep(5);
-  }
-
-  modbus_disconnect();
-
-  redisFree(c);
-
-	return 0;
 }
 
 uint16_t * uintdup(uint16_t const * src, size_t len)
@@ -224,4 +233,8 @@ void handleData(uint16_t *data, int t) {
 	setData("Ahl_daily", data[38]*0.1, t);
 
   free(data);
+}
+
+void termHandler(int dum) {
+  running = false;
 }
