@@ -137,8 +137,8 @@ void setData(char *key, float val, int t) {
   redisReply *reply;
   char *num = numToStr(val);
 
-  reply = redisCommand(c ,"SET %s:%d %s",key, t, num);
-  printf("SET %s:%d to %s %s\n",key, t, num, reply->str);
+  reply = redisCommand(c ,"HSET %s %d %s",key, t, num);
+  printf("SET %s %d to %s %s\n",key, t, num, reply->str);
 
   freeReplyObject(reply);
   free(num);
