@@ -31,7 +31,6 @@ void redis_disconn(void);
 modbus_t * modbus_conn(void);
 void modbus_disconnect(modbus_t *ctx);
 uint16_t * read_data(modbus_t *ctx);
-char * numToStr(float num);
 void setData(char *key, float val, int t);
 void handleData(uint16_t *, int t);
 void termHandler(int dum);
@@ -126,22 +125,13 @@ uint16_t * read_data(modbus_t *ctx) {
   return data;
 }
 
-/* WARNING: caller is responsible for free()ing return value! */
-char * numToStr(float num) {
-  char *buf = malloc(10);
-  sprintf(buf, "%.2f", num);
-  return buf;
-}
-
 void setData(char *key, float val, int t) {
   redisReply *reply;
-  // char *num = numToStr(val);
 
   reply = redisCommand(c ,"HSET %s %d %f",key, t, val);
   printf("SET %s %d to %f %s\n",key, t, val, reply->str);
 
   freeReplyObject(reply);
-  // free(num);
 }
 
 uint16_t * uintdup(uint16_t const * src, size_t len)
@@ -152,6 +142,8 @@ uint16_t * uintdup(uint16_t const * src, size_t len)
 }
 
 void handleData(uint16_t *data, int t) {
+  // Set a master list of timestamps. Makes it easier to access
+  // things in HGET
   redisReply *reply;
   reply = redisCommand(c, "RPUSH timestamps %d", t);
   freeReplyObject(reply);
