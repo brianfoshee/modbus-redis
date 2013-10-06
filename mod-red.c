@@ -135,13 +135,13 @@ char * numToStr(float num) {
 
 void setData(char *key, float val, int t) {
   redisReply *reply;
-  char *num = numToStr(val);
+  // char *num = numToStr(val);
 
-  reply = redisCommand(c ,"HSET %s %d %s",key, t, num);
-  printf("SET %s %d to %s %s\n",key, t, num, reply->str);
+  reply = redisCommand(c ,"HSET %s %d %f",key, t, val);
+  printf("SET %s %d to %f %s\n",key, t, val, reply->str);
 
   freeReplyObject(reply);
-  free(num);
+  // free(num);
 }
 
 uint16_t * uintdup(uint16_t const * src, size_t len)
@@ -152,6 +152,10 @@ uint16_t * uintdup(uint16_t const * src, size_t len)
 }
 
 void handleData(uint16_t *data, int t) {
+  redisReply *reply;
+  reply = redisCommand(c, "RPUSH timestamps %d", t);
+  freeReplyObject(reply);
+
   // Voltage measured directly at the battery terminal
   setData("adc_vb_f", data[0] * 100.0 / 32768.0, t);
 
