@@ -142,10 +142,10 @@ uint16_t * uintdup(uint16_t const * src, size_t len)
 }
 
 void handleData(uint16_t *data, int t) {
-  // Set a master list of timestamps. Makes it easier to access
+  // Set a master set of timestamps. Makes it easier to access
   // things in HGET
   redisReply *reply;
-  reply = redisCommand(c, "RPUSH timestamps %d", t);
+  reply = redisCommand(c, "SADD timestamps %d", t);
   freeReplyObject(reply);
 
   // Voltage measured directly at the battery terminal
