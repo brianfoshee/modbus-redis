@@ -129,7 +129,38 @@ void setData(char *key, float val, int t) {
   redisReply *reply;
 
   reply = redisCommand(c ,"HSET %s %d %f",key, t, val);
-  printf("SET %s %d to %f %s\n",key, t, val, reply->str);
+
+  switch (reply->type) {
+    case REDIS_REPLY_STATUS: {
+      printf("Received Str %s\n", reply->str);
+      break;
+    }
+    case REDIS_REPLY_ERROR: {
+      printf("Received Error %s\n", reply->str);
+      break;
+    }
+    case REDIS_REPLY_INTEGER: {
+      printf("Received Integer %lld\n", reply->integer);
+      break;
+    }
+    case REDIS_REPLY_NIL: {
+      printf("Received nil reply\n");
+      break;
+    }
+    case REDIS_REPLY_STRING: {
+      printf("Received Reply Str %s\n", reply->str);
+      break;
+    }
+    case REDIS_REPLY_ARRAY: {
+      printf("Received array of elements\n");
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+
+  printf("command: HSET %s %d to %f\n",key, t, val);
 
   freeReplyObject(reply);
 }
