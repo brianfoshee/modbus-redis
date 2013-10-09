@@ -8,6 +8,15 @@ require 'redis'
 $pi_r = Redis.new(host: '127.0.0.1', port: 6378, timeout: 60)
 $my_r = Redis.new(host: '127.0.0.1', port: 6379)
 
+def migrate3
+  pi_keys = $pi_r.keys '*'
+  pi_keys.delete 'timestamps'
+  timestamps = $pi_r.smembers 'timestamps'
+
+  # for each key, loop over timestamps and hget value
+  # from pi_r then hset it to my_r
+end
+
 def migrate2
   pi_keys = $pi_r.keys '*'
   pi_keys.delete 'timestamps'
@@ -36,5 +45,3 @@ def migrate1
     puts "Setting #{dat} -> #{tstamp} to #{val}"
   end
 end
-
-migrate2
