@@ -1,3 +1,11 @@
+/* Format of json output
+{
+  "adc_va_f": {
+    "194829148": "12.5"
+  }
+}
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -6,60 +14,53 @@
 #include <json-c/json.h>
 #include <hiredis/hiredis.h>
 
-// Globals
-redisContext *c;
-
 void handle_reply(redisReply *reply);
-void redis_conn(void);
-void redis_disconn(void);
+redisContext* redis_conn(void);
+void redis_disconn(redisContext *c);
 
 int main(int argc, char ** argv) {
-  if (argc < 2) {
-    printf("Usage: ./send KEY\n");
-    exit(0);
-  }
-
-  char *key = argv[1];
-
-  redis_conn();
-
-  /*
-  {
-    "adc_va_f": {
-      194829148: 12.5
-    }
-  }
-  */
+  int i = 0;
+  char *tstamp, *val, *key;
+  redisContext *c = redis_conn();
 
   json_object *baseobj = json_object_new_object();
-  json_object *powerobj = json_object_new_object();
+  json_object *powerobj;
   json_object *r_str;
-  char *tstamp, *val;
 
-  redisReply *reply;
-  redisReply *r;
+  redisReply *tstamp_reply, *keysReply, *tmpReply;
 
-  reply = redisCommand(c, "smembers timestamps");
+  tstamp_reply = redisCommand(c, "smembers timestamps");
+  keysReply = redisCommand(c, "keys *");
 
-  for (int j = 0; j < reply->elements; j++) {
-    // timestamp
-    tstamp = reply->element[j]->str;
-    // get the value for this timestamp
-    r = redisCommand(c, "HGET %s %s", key, tstamp);
-    // add key:val pair to powerobj
-    val = r->str;
-    if (val != NULL) {
-      r_str = json_object_new_string(val);
-      json_object_object_add(powerobj, tstamp, r_str);
+  for (i = 0; i < keysReply->elements; i++) {
+    // ignore key called 'timestamps'
+    key = keysReply->element[i]->str;
+    if (strcmp(key, "timestamps") != 0) {
+      // get all key/vals for this string
+      powerobj = json_object_new_object();
+
+      for (int j = 0; j < tstamp_reply->elements; j++) {
+        // timestamp
+        tstamp = tstamp_reply->element[j]->str;
+        // get the value for this timestamp
+        tmpReply = redisCommand(c, "HGET %s %s", key, tstamp);
+        // add key:val pair to powerobj
+        val = tmpReply->str;
+        if (val != NULL) {
+          r_str = json_object_new_string(val);
+          json_object_object_add(powerobj, tstamp, r_str);
+        }
+        freeReplyObject(tmpReply);
+      }
+
+      json_object_object_add(baseobj, key, powerobj);
     }
-    freeReplyObject(r);
   }
 
-  freeReplyObject(reply);
+  freeReplyObject(tstamp_reply);
+  freeReplyObject(keysReply);
 
-  json_object_object_add(baseobj, key, powerobj);
-
-  redis_disconn();
+  redis_disconn(c);
 
   printf("%s\n", json_object_to_json_string(baseobj));
 
@@ -102,7 +103,8 @@ void handle_reply(redisReply *reply) {
   }
 }
 
-void redis_conn(void) {
+redisContext* redis_conn(void) {
+  redisContext *c;
   const char *hostname = "127.0.0.1";
   int port = 6380;
 
@@ -117,8 +119,9 @@ void redis_conn(void) {
     }
     exit(-1);
   }
+  return c;
 }
 
-void redis_disconn(void) {
+void redis_disconn(redisContext *c) {
   redisFree(c);
 }
