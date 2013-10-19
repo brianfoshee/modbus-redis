@@ -13,7 +13,14 @@ void handle_reply(redisReply *reply);
 void redis_conn(void);
 void redis_disconn(void);
 
-int main(void) {
+int main(int argc, char ** argv) {
+  if (argc < 2) {
+    printf("Usage: ./send KEY\n");
+    exit(0);
+  }
+
+  char *key = argv[1];
+
   redis_conn();
 
   /*
@@ -38,8 +45,8 @@ int main(void) {
     // timestamp
     tstamp = reply->element[j]->str;
     // get the value for this timestamp
-    r = redisCommand(c, "HGET Sweep_Pmax %s", tstamp);
-    //add key:val pair to powerobj
+    r = redisCommand(c, "HGET %s %s", key, tstamp);
+    // add key:val pair to powerobj
     val = r->str;
     if (val != NULL) {
       r_str = json_object_new_string(val);
@@ -50,11 +57,11 @@ int main(void) {
 
   freeReplyObject(reply);
 
-  json_object_object_add(baseobj, "Power_out", powerobj);
+  json_object_object_add(baseobj, key, powerobj);
 
   redis_disconn();
 
-  printf ("%s\n", json_object_to_json_string(powerobj));
+  printf("%s\n", json_object_to_json_string(baseobj));
 
   return 0;
 }
@@ -97,7 +104,7 @@ void handle_reply(redisReply *reply) {
 
 void redis_conn(void) {
   const char *hostname = "127.0.0.1";
-  int port = 6379;
+  int port = 6380;
 
   struct timeval timeout = { 1, 500000 };
   c = redisConnectWithTimeout(hostname, port, timeout);
