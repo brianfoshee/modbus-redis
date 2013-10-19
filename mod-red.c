@@ -115,6 +115,7 @@ void modbus_disconnect(modbus_t *ctx) {
 /* WARNING: caller is responsible for free()ing return value! */
 uint16_t * read_data(modbus_t *ctx) {
 	/* Read the RAM Registers */
+  // TODO: Read in two separate requests because of limitations with MODBUS
   int rc;
   uint16_t *data = malloc(sizeof(uint16_t) * 50);
 	rc = modbus_read_registers(ctx, 0x0008, 45, data);
