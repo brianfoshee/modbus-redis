@@ -21,24 +21,22 @@ void redis_disconn(redisContext *c);
 int main(int argc, char ** argv) {
   int i = 0;
   char *tstamp, *val, *key;
-  redisContext *c = redis_conn();
-
-  json_object *baseobj = json_object_new_object();
-  json_object *powerobj;
-  json_object *r_str;
-
+  redisContext *c;
+  json_object *baseobj, *powerobj, *r_dbl;
   redisReply *tstamp_reply, *keysReply, *tmpReply;
 
+  c = redis_conn();
+  baseobj = json_object_new_object();
   tstamp_reply = redisCommand(c, "smembers timestamps");
   keysReply = redisCommand(c, "keys *");
 
   for (i = 0; i < keysReply->elements; i++) {
     // ignore key called 'timestamps'
     key = keysReply->element[i]->str;
-    if (strcmp(key, "timestamps") != 0) {
-      // get all key/vals for this string
-      powerobj = json_object_new_object();
 
+    if (strcmp(key, "timestamps") != 0) {
+      // get all key/vals for this string and store them in a json obj
+      powerobj = json_object_new_object();
       for (int j = 0; j < tstamp_reply->elements; j++) {
         // timestamp
         tstamp = tstamp_reply->element[j]->str;
@@ -47,14 +45,15 @@ int main(int argc, char ** argv) {
         // add key:val pair to powerobj
         val = tmpReply->str;
         if (val != NULL) {
-          r_str = json_object_new_string(val);
-          json_object_object_add(powerobj, tstamp, r_str);
+          r_dbl = json_object_new_double(atof(val));
+          json_object_object_add(powerobj, tstamp, r_dbl);
         }
         freeReplyObject(tmpReply);
       }
-
+      // add the json obj for this key to the base obj
       json_object_object_add(baseobj, key, powerobj);
     }
+
   }
 
   freeReplyObject(tstamp_reply);
