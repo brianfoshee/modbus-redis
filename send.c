@@ -1,3 +1,14 @@
+/* *****************
+ * This program packages up the keys stored in redis as JSON and sends
+ * them out to a server to persist, then removes the data it read.
+ * Reason is that the RPi has limited memory and storing every 5 seconds
+ * uses a lot of memory pretty quickly.
+ *
+ * Compile with:
+ * cc -I/usr/local/include -L/usr/local/lib \
+      -lcurl -lhiredis -ljson-c send.c -o send
+ ***************** */
+
 /* Format of json output
 {
   "adc_va_f": {
@@ -10,6 +21,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <curl/curl.h>
 
 #include <json-c/json.h>
 #include <hiredis/hiredis.h>
@@ -29,6 +41,9 @@ int main(int argc, char ** argv) {
   baseobj = json_object_new_object();
   tstamp_reply = redisCommand(c, "smembers timestamps");
   keysReply = redisCommand(c, "keys *");
+
+  // Initialize curl
+  curl_global_init(CURL_GLOBAL_SSL);
 
   for (i = 0; i < keysReply->elements; i++) {
     // ignore key called 'timestamps'
@@ -60,6 +75,8 @@ int main(int argc, char ** argv) {
   freeReplyObject(keysReply);
 
   redis_disconn(c);
+
+  curl_global_cleanup();
 
   printf("%s\n", json_object_to_json_string(baseobj));
 
