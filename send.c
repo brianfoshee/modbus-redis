@@ -112,7 +112,6 @@ int main(int argc, char ** argv) {
   for (i = 0; i < NUMTHREADS; i++)
   {
     pthread_create(&thread[i], NULL, processKeys, &data[i]);
-    // processKeys(&data[i]);
   }
 
   for (i = 0; i < NUMTHREADS; i++)
