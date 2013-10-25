@@ -119,8 +119,6 @@ int main(int argc, char ** argv) {
     pthread_join(thread[i], NULL);
   }
 
-  fprintf(stdout, "waiting");
-
   for (i = 0; i < numKeys; i++)
   {
     free(keys[i]);
@@ -136,8 +134,6 @@ int main(int argc, char ** argv) {
 
   redis_disconn(c);
   curl_global_cleanup();
-
-  fprintf(stdout, "freed");
 
   f = fopen("/Users/brian/Desktop/out.json", "w");
 
