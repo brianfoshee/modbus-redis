@@ -30,8 +30,9 @@
 #define NUMTHREADS 8
 
 struct ThreadData {
-    int start, stop;
-    struct redisReply **array;
+  int start, stop;
+  size_t size;
+  char **keys, **tstamps;
 };
 
 redisContext *c;
@@ -39,13 +40,14 @@ redisReply *keysReply, *tstampReply;
 json_object *baseobj;
 
 void* processKeys(void *td);
-void processKey(char *);
+void processKey(char *, char **tstamps, size_t size);
 redisContext* redis_conn(void);
 void redis_disconn(redisContext *c);
 void handle_reply(redisReply *reply);
 
 int main(int argc, char ** argv) {
-  int numKeys, i, start, stop, jobsPerThread;
+  int numKeys, numTstamps, i, skip, start, stop, jobsPerThread;
+  char **keys, **tstamps, *key;
   struct ThreadData data[NUMTHREADS];
   pthread_t thread[NUMTHREADS];
 
@@ -54,82 +56,130 @@ int main(int argc, char ** argv) {
   baseobj = json_object_new_object();
   tstampReply = redisCommand(c, "smembers timestamps");
   keysReply = redisCommand(c, "keys *");
-  numKeys = (int) keysReply->elements;
+  numKeys = (int) keysReply->elements - 1;
+  numTstamps = (int)tstampReply->elements;
   jobsPerThread = (numKeys + NUMTHREADS - 1) / NUMTHREADS;
+  keys = malloc(numKeys * sizeof(char*));
+  tstamps = malloc(numTstamps * sizeof(char*));
 
-  fprintf(stdout, "Number of keys %d\nJobs per thread %d\n", numKeys, jobsPerThread);
+  fprintf(stdout, "Number of keys %d\n", numKeys);
+  fprintf(stdout, "Number of tstamps %d\n", numTstamps);
+  fprintf(stdout, "Jobs per thread %d\n", jobsPerThread);
 
-  for (i = 0; i < NUMTHREADS; i++) {
+  // Fill the keys array with all keys except for timestamps
+  // fill indices up until 'timestamps'
+  // when it reaches that, keys[i] should be always set to element[i + i]
+  for (i = 0; i < numKeys; i++)
+  {
+    key = keysReply->element[i]->str;
+
+    if (strcmp(key, "timestamps") == 0)
+      skip = 1;
+
+    if (skip == 1)
+      key = keysReply->element[i + 1]->str;
+
+    keys[i] = malloc(strlen(key) * sizeof(char*));
+    strncpy(keys[i], key, strlen(key));
+  }
+
+  // Fill the tstamps array with all timestamps
+  for (i = 0; i < numTstamps; i++)
+  {
+    key = tstampReply->element[i]->str;
+    tstamps[i] = malloc(strlen(key) * sizeof(char*));
+    strncpy(tstamps[i], key, strlen(key));
+  }
+
+  // Go ahead and free the redis objects
+  freeReplyObject(tstampReply);
+  freeReplyObject(keysReply);
+
+  for (i = 0; i < NUMTHREADS; i++)
+  {
     data[i].start = i * jobsPerThread;
     data[i].stop = (i + 1) * jobsPerThread;
-    data[i].array = keysReply->element;
+    data[i].size = numTstamps;
+    data[i].keys = keys;
+    data[i].tstamps = tstamps;
 
     if (data[i].stop > numKeys)
       data[i].stop = numKeys;
   }
 
-  // Go through each group and send to function for each key
-  for (i = 0; i < NUMTHREADS; i++) {
+  for (i = 0; i < NUMTHREADS; i++)
+  {
     // pthread_create(&thread[i], NULL, processKeys, &data[i]);
     processKeys(&data[i]);
   }
 
-  for (i = 0; i < NUMTHREADS; i++) {
+  for (i = 0; i < NUMTHREADS; i++)
+  {
     pthread_join(thread[i], NULL);
   }
 
-  redis_disconn(c);
-  curl_global_cleanup();
-  freeReplyObject(tstampReply);
-  freeReplyObject(keysReply);
-
-  FILE *f = fopen("/Users/brian/Desktop/out.json", "w");
-  if (f == NULL)
+  for (i = 0; i < numKeys; i++)
   {
-      printf("Error opening file!\n");
-      exit(1);
+    free(keys[i]);
   }
 
-  fprintf(f, "%s\n", json_object_to_json_string(baseobj));
+  for (i = 0; i < numTstamps; i++)
+  {
+    free(tstamps[i]);
+  }
 
-  fclose(f);
+  free(keys);
+  free(tstamps);
 
-  // fprintf(stdout, "%s\n", json_object_to_json_string(baseobj));
+  redis_disconn(c);
+  curl_global_cleanup();
+
+  // FILE *f = fopen("/Users/brian/Desktop/out.json", "w");
+  // if (f == NULL)
+  // {
+  //     printf("Error opening file!\n");
+  //     exit(1);
+  // }
+
+  fprintf(stdout, "%s\n", json_object_to_json_string(baseobj));
+
+  // fclose(f);
 
   return 0;
 }
 
-void* processKeys(void *td) {
+void* processKeys(void *td)
+{
   struct ThreadData* data = td;
   int start = data->start;
   int stop = data->stop;
-  redisReply **array = data->array;
+  size_t size = data->size;
+  char **keys = data->keys;
+  char **tstamps = data->tstamps;
   int i;
   char *key;
 
   fprintf(stdout, "Processing %d to %d\n", start, stop);
 
   for (int i = start; i < stop; i++) {
-    key = array[i]->str;
-    if (strcmp(key, "timestamps") != 0)
-      processKey(key);
+    key = keys[i];
+    processKey(key, tstamps, size);
   }
 
   return NULL;
 }
 
-void processKey(char *key) {
-  fprintf(stdout, "Processing key %s\n", key);
-
+void processKey(char *key, char **tstamps, size_t size)
+{
   json_object *powerobj, *r_dbl;
   redisReply *tmpReply;
-  char *tstamp, *val;
+  char *val, *tstamp;
 
   powerobj = json_object_new_object();
 
-  for (int j = 0; j < tstampReply->elements; j++) {
-    // timestamp
-    tstamp = tstampReply->element[j]->str;
+  for (int j = 0; j < (int) size; j++) {
+    tstamp = tstamps[j];
+    fprintf(stdout, "Processing key %s %s\n", key, tstamp);
     // get the value for this timestamp
     tmpReply = redisCommand(c, "HGET %s %s", key, tstamp);
     // add key:val pair to powerobj
