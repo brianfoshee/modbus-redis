@@ -45,6 +45,7 @@ void handle_reply(redisReply *reply);
 int main(int argc, char ** argv) {
   int numKeys, numTstamps, i, skip, start, stop, jobsPerThread;
   char **keys, **tstamps, *key;
+  const char *jsonStr;
   redisReply *keysReply, *tstampReply;
   struct ThreadData data[NUMTHREADS];
   pthread_t thread[NUMTHREADS];
@@ -53,12 +54,11 @@ int main(int argc, char ** argv) {
   FILE *f;
 
   c = redis_conn();
-  curl_global_init(CURL_GLOBAL_SSL);
   baseObj = json_object_new_object();
   tstampReply = redisCommand(c, "smembers timestamps");
   keysReply = redisCommand(c, "keys *");
   numKeys = (int) keysReply->elements - 1;
-  numTstamps = (int)tstampReply->elements;
+  numTstamps = (int) tstampReply->elements;
   jobsPerThread = (numKeys + NUMTHREADS - 1) / NUMTHREADS;
   keys = malloc(numKeys * sizeof(char*));
   tstamps = malloc(numTstamps * sizeof(char*));
@@ -133,7 +133,8 @@ int main(int argc, char ** argv) {
   free(tstamps);
 
   redis_disconn(c);
-  curl_global_cleanup();
+
+  jsonStr = json_object_to_json_string(baseObj);
 
   f = fopen("/Users/brian/Desktop/out.json", "w");
 
@@ -143,7 +144,24 @@ int main(int argc, char ** argv) {
       exit(1);
   }
 
-  fprintf(f, "%s\n", json_object_to_json_string(baseObj));
+  fprintf(f, "%s\n", jsonStr);
+
+  curl_global_init(CURL_GLOBAL_SSL);
+
+  CURL *handle = curl_easy_init();
+  struct curl_slist *headers=NULL;
+  headers = curl_slist_append(headers, "Content-Type: application/json");
+
+  curl_easy_setopt(handle, CURLOPT_URL, "http://localhost:9292/readings");
+  curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
+  curl_easy_setopt(handle, CURLOPT_HEADER, 1);
+
+  curl_easy_setopt(handle, CURLOPT_HTTPHEADER, headers);
+  curl_easy_setopt(handle, CURLOPT_POSTFIELDS, jsonStr);
+
+  CURLcode code = curl_easy_perform(handle);
+  curl_slist_free_all(headers);
+  curl_global_cleanup();
 
   fclose(f);
 
