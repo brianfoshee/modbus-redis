@@ -56,8 +56,8 @@ int main(int argc, char ** argv) {
   c = redis_conn();
   baseObj = json_object_new_object();
   tstampReply = redisCommand(c, "smembers timestamps");
-  keysReply = redisCommand(c, "keys *");
-  numKeys = (int) keysReply->elements - 1;
+  keysReply = redisCommand(c, "keys solar:*");
+  numKeys = (int) keysReply->elements;
   numTstamps = (int) tstampReply->elements;
   jobsPerThread = (numKeys + NUMTHREADS - 1) / NUMTHREADS;
   keys = malloc(numKeys * sizeof(char*));
@@ -67,19 +67,10 @@ int main(int argc, char ** argv) {
   fprintf(stdout, "Number of tstamps %d\n", numTstamps);
   fprintf(stdout, "Jobs per thread %d\n", jobsPerThread);
 
-  // Fill the keys array with all keys except for timestamps
-  // fill indices up until 'timestamps'
-  // when it reaches that, keys[i] should be always set to element[i + i]
+  // Fill the keys array with all keys
   for (i = 0; i < numKeys; i++)
   {
     key = keysReply->element[i]->str;
-
-    if (strcmp(key, "timestamps") == 0)
-      skip = 1;
-
-    if (skip == 1)
-      key = keysReply->element[i + 1]->str;
-
     keys[i] = malloc(strlen(key) * sizeof(char*));
     strncpy(keys[i], key, strlen(key));
   }
