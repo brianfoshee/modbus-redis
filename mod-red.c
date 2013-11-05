@@ -129,7 +129,7 @@ uint16_t * read_data(modbus_t *ctx) {
 void setData(char *key, float val, int t) {
   redisReply *reply;
 
-  reply = redisCommand(c ,"HSET %s %d %f",key, t, val);
+  reply = redisCommand(c ,"HSET solar:%s %d %f",key, t, val);
 
   switch (reply->type) {
     case REDIS_REPLY_STATUS: {
