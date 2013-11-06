@@ -5,8 +5,8 @@
  * uses a lot of memory pretty quickly.
  *
  * Compile with:
- * cc -I/usr/local/include -L/usr/local/lib \
-      -lcurl -lhiredis -ljson-c send.c -o send
+ * cc -std=c99 -I/usr/local/include -L/usr/local/lib \
+      -lcurl -lhiredis -ljson-c -lpthread send.c -o send
  ***************** */
 
 /* Format of json output
@@ -143,7 +143,7 @@ int main(int argc, char ** argv) {
   struct curl_slist *headers=NULL;
   headers = curl_slist_append(headers, "Content-Type: application/json");
 
-  curl_easy_setopt(handle, CURLOPT_URL, "http://localhost:9292/readings");
+  curl_easy_setopt(handle, CURLOPT_URL, "http://192.168.1.8:9292/readings");
   curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
   curl_easy_setopt(handle, CURLOPT_HEADER, 1);
 
