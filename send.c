@@ -127,7 +127,7 @@ int main(int argc, char ** argv) {
 
   jsonStr = json_object_to_json_string(baseObj);
 
-  f = fopen("/Users/brian/Desktop/out.json", "w");
+  f = fopen("/tmp/out.json", "w");
 
   if (f == NULL)
   {
@@ -174,7 +174,9 @@ void* processKeys(void *td)
   fprintf(stdout, "Processing %d to %d\n", start, stop);
 
   for (int i = start; i < stop; i++) {
-    key = keys[i];
+    for (int j = 6; j < strlen(keys[i]); j++)
+      key[j] = keys[i][j];
+
     processKey(key, tstamps, size, baseObj);
   }
 
@@ -213,7 +215,7 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
 redisContext* redis_conn(void) {
   redisContext *c;
   const char *hostname = "127.0.0.1";
-  int port = 6380;
+  int port = 6379;
 
   struct timeval timeout = { 1, 500000 };
   c = redisConnectWithTimeout(hostname, port, timeout);
