@@ -168,14 +168,16 @@ void* processKeys(void *td)
   char **keys = data->keys;
   char **tstamps = data->tstamps;
   json_object *baseObj = data->baseObj;
-  int i;
-  char *key;
+  int i, j, len;
+  char *key, *tmp;
 
   fprintf(stdout, "Processing %d to %d\n", start, stop);
 
-  for (int i = start; i < stop; i++) {
-    for (int j = 6; j < strlen(keys[i]); j++)
-      key[j] = keys[i][j];
+  for (i = start; i < stop; i++) {
+    tmp = keys[i];
+    len = strlen(tmp);
+    for (j = 6; j < len; j++)
+      key[j - 6] = tmp[j];
 
     processKey(key, tstamps, size, baseObj);
   }
