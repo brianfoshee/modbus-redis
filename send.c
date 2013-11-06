@@ -200,7 +200,7 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
   for (int j = 0; j < (int) size; j++) {
     tstamp = tstamps[j];
     // get the value for this timestamp
-    tmpReply = redisCommand(c, "HGET %s %s", key, tstamp);
+    tmpReply = redisCommand(c, "HGET solar:%s %s", key, tstamp);
     // add key:val pair to powerobj
     val = tmpReply->str;
     if (val != NULL) {
