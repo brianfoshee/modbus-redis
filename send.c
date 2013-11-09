@@ -177,10 +177,10 @@ void* processKeys(void *td)
   for (i = start; i < stop; i++) {
     tmp = keys[i];
     len = strlen(tmp) - strlen("solar:");
-    memcpy(&key, tmp + 6, len);
-    fprintf(stdout, "Key is %s", key);
-
+    key = malloc(sizeof(char *) * len);
+    memcpy(&key[0], &tmp[6], len);
     processKey(key, tstamps, size, baseObj);
+    free(key);
   }
 
   return NULL;
