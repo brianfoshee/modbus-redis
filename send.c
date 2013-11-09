@@ -27,7 +27,7 @@
 #include <json-c/json.h>
 #include <hiredis/hiredis.h>
 
-#define NUMTHREADS 8
+#define NUMTHREADS 2
 
 struct ThreadData {
   int start, stop;
