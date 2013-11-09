@@ -41,12 +41,12 @@ int main()
 
   uint16_t *data;
   modbus_t *ctx;
+  int t;
 
   redis_conn();
 
   ctx = modbus_conn();
 
-  int t;
   while(running) {
     t = (int)time(NULL);
 
@@ -164,13 +164,6 @@ void setData(char *key, float val, int t) {
   printf("command: HSET %s %d to %f\n",key, t, val);
 
   freeReplyObject(reply);
-}
-
-uint16_t * uintdup(uint16_t const * src, size_t len)
-{
-   uint16_t * p = malloc(len * sizeof(uint16_t));
-   memcpy(p, src, len * sizeof(uint16_t));
-   return p;
 }
 
 void handleData(uint16_t *data, int t) {
