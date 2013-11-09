@@ -173,11 +173,12 @@ void* processKeys(void *td)
 
   fprintf(stdout, "Processing %d to %d\n", start, stop);
 
+  /* TODO do some substring substitution to pull 'solar:' out of the key */
   for (i = start; i < stop; i++) {
     tmp = keys[i];
-    len = strlen(tmp);
-    for (j = 6; j < len; j++)
-      key[j - 6] = tmp[j];
+    len = strlen(tmp) - strlen("solar:");
+    memcpy(&key, tmp + 6, len);
+    fprintf(stdout, "Key is %s", key);
 
     processKey(key, tstamps, size, baseObj);
   }
