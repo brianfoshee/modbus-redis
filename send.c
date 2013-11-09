@@ -173,7 +173,7 @@ void* processKeys(void *td)
 
   fprintf(stdout, "Processing %d to %d\n", start, stop);
 
-  /* TODO do some substring substitution to pull 'solar:' out of the key */
+  // Keys are prefixed with 'solar:'. This removes that prefix.
   for (i = start; i < stop; i++) {
     tmp = keys[i];
     len = strlen(tmp) - strlen("solar:");
