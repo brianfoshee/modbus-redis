@@ -4,6 +4,7 @@
                      -L/usr/local/lib -lmodbus -lhiredis  mod-red.c -o mod-red
  */
 
+#include "send.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -14,20 +15,15 @@
 
 #include <modbus/modbus.h>
 #include <hiredis/hiredis.h>
-#include <json-c/json.h>
 
 #define SUNSAVERMPPT    0x01           // MODBUS address
 #define SERIALPORT      "/dev/ttyUSB0" // SerialPort address
-#define REDIS_SERVER    "127.0.0.1"    // Redis server host
-#define REDIS_PORT      6379           // Redis server port
 
 // Global Vars
 redisContext *c;
 static bool running = true;
 
 // Method Definitions
-void redis_conn(void);
-void redis_disconn(void);
 modbus_t * modbus_conn(void);
 void modbus_disconnect(modbus_t *ctx);
 uint16_t * read_data(modbus_t *ctx);
@@ -43,7 +39,7 @@ int main()
   modbus_t *ctx;
   int t;
 
-  redis_conn();
+  c = redis_conn();
 
   ctx = modbus_conn();
 
@@ -59,30 +55,9 @@ int main()
 
   modbus_disconnect(ctx);
 
-  redis_disconn();
+  redis_disconn(c);
 
 	return 0;
-}
-
-void redis_conn(void) {
-  const char *hostname = REDIS_SERVER;
-  int port = REDIS_PORT;
-
-  struct timeval timeout = { 1, 500000 };
-  c = redisConnectWithTimeout(hostname, port, timeout);
-  if (c == NULL || c->err) {
-    if (c) {
-        printf("Connection error: %s\n", c->errstr);
-        redisFree(c);
-    } else {
-        printf("Connection error: can't allocate redis context\n");
-    }
-    exit(-1);
-  }
-}
-
-void redis_disconn(void) {
-  redisFree(c);
 }
 
 modbus_t * modbus_conn(void) {

@@ -17,6 +17,7 @@
 }
 */
 
+#include "send.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -25,7 +26,6 @@
 #include <curl/curl.h>
 
 #include <json-c/json.h>
-#include <hiredis/hiredis.h>
 
 #define NUMTHREADS 2
 
@@ -38,8 +38,6 @@ struct ThreadData {
 
 void* processKeys(void *td);
 void processKey(char *key, char **tstamps, size_t, json_object *);
-redisContext* redis_conn(void);
-void redis_disconn(redisContext *c);
 void handle_reply(redisReply *reply);
 
 int main(int argc, char ** argv) {
@@ -217,8 +215,8 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
 
 redisContext* redis_conn(void) {
   redisContext *c;
-  const char *hostname = "127.0.0.1";
-  int port = 6379;
+  const char *hostname = REDIS_SERVER;
+  int port = REDIS_PORT;
 
   struct timeval timeout = { 1, 500000 };
   c = redisConnectWithTimeout(hostname, port, timeout);
@@ -236,40 +234,4 @@ redisContext* redis_conn(void) {
 
 void redis_disconn(redisContext *c) {
   redisFree(c);
-}
-
-void handle_reply(redisReply *reply) {
-  switch (reply->type) {
-    case REDIS_REPLY_STATUS: {
-      printf("Received Str %s\n", reply->str);
-      break;
-    }
-    case REDIS_REPLY_ERROR: {
-      printf("Received Error %s\n", reply->str);
-      break;
-    }
-    case REDIS_REPLY_INTEGER: {
-      printf("Received Integer %lld\n", reply->integer);
-      break;
-    }
-    case REDIS_REPLY_NIL: {
-      printf("Received nil reply\n");
-      break;
-    }
-    case REDIS_REPLY_STRING: {
-      printf("Received Reply Str %s\n", reply->str);
-      break;
-    }
-    case REDIS_REPLY_ARRAY: {
-      printf("Received array of elements of length %ld\n", reply->elements);
-      for (int j = 0; j < reply->elements; j++) {
-        handle_reply(reply->element[j]);
-        // printf("%u) %s\n", j, reply->element[j]->str);
-      }
-      break;
-    }
-    default: {
-      break;
-    }
-  }
 }
