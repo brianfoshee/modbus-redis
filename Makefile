@@ -1,16 +1,16 @@
-all: hello
+all: sunsaver
 
-hello: main.o factorial.o hello.o
-	g++ main.o factorial.o hello.o -o hello
+sunsaver: send.o collect.o main.o
+	cc send.o collect.o main.o -o sunsaver
 
-main.o: main.cpp
-	g++ -c main.cpp
+main.o: main.c
+	cc main.c
 
-factorial.o: factorial.cpp
-	g++ -c factorial.cpp
+send.o: send.c
+	cc -std=c99 -I/usr/local/include -L/usr/local/lib -lcurl -lhiredis -ljson-c -lpthread send.c
 
-hello.o: hello.cpp
-	g++ -c hello.cpp
+collect.o: collect.c
+	cc -I/usr/local/include/modbus -I/usr/local/include/hiredis -L/usr/local/lib -lmodbus -lhiredis  mod-red.c
 
 clean:
-	rm -rf *o hello
+	rm -rf *o sunsaver
