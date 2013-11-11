@@ -1,5 +1,4 @@
 *.rdb
-*.o
 sunsaver
 appendonly.aof
 .DS_Store
