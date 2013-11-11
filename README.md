@@ -4,6 +4,9 @@ Reading data from a Morningstar Sunsaver MPPT and storing it in Redis.
 
 Starting point for what will be a system to monitor and view solar/charging data.
 
+Since inception, many improvements have been made to this project. It pulls data every 5 seconds then can send it
+to a remote server in JSON format to be stored and analyzed in postgres.
+
 This runs on a Raspberry Pi. Requires [hiredis] [hired] and [libmodbus] [libmod].
 
 Basis of the modbus from [this blog post] [tom-blog].
@@ -15,9 +18,7 @@ Work to improve this:
 - Send data to an app on Heroku (collecting every 5 seconds generates a bunch of Redis keys)
   - [Sinatra app for this here] [solar-collector]
 - Visualize with D3 (realtime and archived)
-- Clean up mod-red.c
-- Refactor mod-red.c
-  - Restructure Redis keys
+- Clean up collect.c
   - DRY up data accessing and number conversions
 
 [tom-blog]: http://westyd1982.wordpress.com/2010/03/26/linux-and-mac-os-x-software-to-read-data-from-the-sunsaver-mppt-using-modbus/
