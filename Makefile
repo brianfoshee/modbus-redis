@@ -1,16 +1,19 @@
 all: sunsaver
 
-sunsaver: send.o collect.o main.o
-	cc send.o collect.o main.o -o sunsaver
+sunsaver: send collect main
+	cc build/send.o build/collect.o build/main.o -o sunsaver
 
-main.o: main.c
-	cc main.c
+main: send collect
+	cc -std=c99 -I/usr/local/include -L/usr/local/lib -lmodbus -lcurl -lhiredis -ljson-c -lpthread src/main.c -o main.o
 
-send.o: send.c
-	cc -std=c99 -I/usr/local/include -L/usr/local/lib -lcurl -lhiredis -ljson-c -lpthread send.c
+send: connection
+	cc -c -std=c99 src/send.c -o build/send.o
 
-collect.o: collect.c
-	cc -I/usr/local/include/modbus -I/usr/local/include/hiredis -L/usr/local/lib -lmodbus -lhiredis  mod-red.c
+collect: connection
+	cc -c -std=c99 src/collect.c -o build/collect.o
+
+connection:
+	cc -c -std=c99 src/connection.h -o build/connection.o
 
 clean:
-	rm -rf *o sunsaver
+	rm -rf build/*o sunsaver

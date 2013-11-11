@@ -3,15 +3,11 @@
  * and sends it to a remote server for persisting and analyzing.
  */
 
-#ifndef SEND
-#define SEND
+#ifndef SEND_H
+#define SEND_H
 
-#include <hiredis/hiredis.h>
+#include "connection.h"
 
-#define REDIS_SERVER    "127.0.0.1"    // Redis server host
-#define REDIS_PORT      6379           // Redis server port
-
-redisContext* redis_conn(void);
-void redis_disconn(redisContext *c);
+void sendData(void);
 
 #endif

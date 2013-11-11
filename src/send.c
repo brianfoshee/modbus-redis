@@ -3,10 +3,6 @@
  * them out to a server to persist, then removes the data it read.
  * Reason is that the RPi has limited memory and storing every 5 seconds
  * uses a lot of memory pretty quickly.
- *
- * Compile with:
- * cc -std=c99 -I/usr/local/include -L/usr/local/lib \
-      -lcurl -lhiredis -ljson-c -lpthread send.c -o send
  ***************** */
 
 /* Format of json output
@@ -18,13 +14,9 @@
 */
 
 #include "send.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <string.h>
 #include <pthread.h>
-#include <curl/curl.h>
 
+#include <curl/curl.h>
 #include <json-c/json.h>
 
 #define NUMTHREADS 2
@@ -40,7 +32,7 @@ void* processKeys(void *td);
 void processKey(char *key, char **tstamps, size_t, json_object *);
 void handle_reply(redisReply *reply);
 
-int main(int argc, char ** argv) {
+void sendData(void) {
   int numKeys, numTstamps, i, skip, start, stop, jobsPerThread;
   char **keys, **tstamps, *key;
   const char *jsonStr;
@@ -141,7 +133,7 @@ int main(int argc, char ** argv) {
   struct curl_slist *headers=NULL;
   headers = curl_slist_append(headers, "Content-Type: application/json");
 
-  curl_easy_setopt(handle, CURLOPT_URL, "http://192.168.1.8:9292/readings");
+  curl_easy_setopt(handle, CURLOPT_URL, PERSIST_URL);
   curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
   curl_easy_setopt(handle, CURLOPT_HEADER, 1);
 
@@ -153,8 +145,6 @@ int main(int argc, char ** argv) {
   curl_global_cleanup();
 
   fclose(f);
-
-  return 0;
 }
 
 void* processKeys(void *td)
@@ -211,27 +201,4 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
   // add the json obj for this key to the base obj
   json_object_object_add(baseObj, key, powerobj);
   redis_disconn(c);
-}
-
-redisContext* redis_conn(void) {
-  redisContext *c;
-  const char *hostname = REDIS_SERVER;
-  int port = REDIS_PORT;
-
-  struct timeval timeout = { 1, 500000 };
-  c = redisConnectWithTimeout(hostname, port, timeout);
-  if (c == NULL || c->err) {
-    if (c) {
-      printf("Connection error: %s\n", c->errstr);
-      redisFree(c);
-    } else {
-      printf("Connection error: can't allocate redis context\n");
-    }
-    exit(-1);
-  }
-  return c;
-}
-
-void redis_disconn(redisContext *c) {
-  redisFree(c);
 }
