@@ -16,7 +16,7 @@ void setData(char *key, float val, int t, redisContext *c);
 void handleData(uint16_t *, int t, redisContext *c);
 void termHandler(int dum);
 
-void collectData(void)
+void* collectData(void* td)
 {
   signal(SIGINT, termHandler);
 
@@ -42,6 +42,8 @@ void collectData(void)
   modbus_disconnect(m_ctx);
 
   redis_disconn(r_ctx);
+
+  return NULL;
 }
 
 /* WARNING: caller is responsible for free()ing return value! */
