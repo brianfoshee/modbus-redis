@@ -16,6 +16,8 @@ redisContext* redis_conn(void) {
     }
     exit(-1);
   }
+
+  fprintf(stdout, "Redis connected\n");
   return c;
 }
 

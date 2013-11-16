@@ -15,12 +15,14 @@ int main(int argc, char **argv)
   pthread_t thread;
   // On one thread, start collection
   pthread_create(&thread, NULL, collectData, (void *)1);
+  pthread_join(thread, NULL);
 
   // Every 5 minutes send data
-  while (running)
-  {
-    sendData();
-  }
+  // while (running)
+  // {
+  //   sendData();
+  //   sleep(5 * 60);
+  // }
 
   return 0;
 }
