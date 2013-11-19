@@ -11,7 +11,12 @@
 #include <hiredis/hiredis.h>
 
 #define SUNSAVER_ADDR    0x01           // MODBUS address of sunsaver
-#define SERIALPORT      "/dev/ttyAMA0"  // SerialPort address
+#ifdef __APPLE__
+  #define SERIALPORT      "/dev/tty.usbserial-AD026B5W"
+#elif __linux
+  #define SERIALPORT      "/dev/ttyAMA0"
+#endif
+
 #define REDIS_SERVER    "127.0.0.1"     // Redis server host
 #define REDIS_PORT      6379            // Redis server port
 #define REDIS_PREFIX    "solar"         // prefix to add in front of keys

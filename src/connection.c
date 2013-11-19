@@ -32,7 +32,6 @@ modbus_t * modbus_conn(void) {
 		fprintf(stderr, "Unable to create the libmodbus context\n");
 		exit(-1);
 	}
-
 	/* Set the slave id to the SunSaver MPPT MODBUS id */
 	modbus_set_slave(ctx, SUNSAVER_ADDR);
 

@@ -52,9 +52,9 @@ uint16_t * read_data(modbus_t *ctx) {
   // TODO: Read in two separate requests because of limitations with MODBUS
   int rc;
   uint16_t *data = malloc(sizeof(uint16_t) * 50);
-	rc = modbus_read_registers(ctx, 0x0008, 45, data);
+	rc = modbus_read_registers(ctx, 0x08, 45, data);
 	if (rc == -1) {
-		fprintf(stderr, "%s\n", modbus_strerror(errno));
+		fprintf(stderr, "Modbus Error: %s\n", modbus_strerror(errno));
 		exit(-1);
 	}
   return data;
