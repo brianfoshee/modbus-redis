@@ -1,5 +1,7 @@
 [Blog post] [my-blog]
 
+[A few images of the setup] [flikr-set]
+
 Reading data from a Morningstar Sunsaver MPPT and storing it in Redis.
 
 Starting point for what will be a system to monitor and view solar/charging data.
@@ -26,6 +28,8 @@ Work to improve this:
 [hired]: https://github.com/redis/hiredis
 
 [libmod]: https://github.com/stephane/libmodbus
+
+[flikr-set]: http://www.flickr.com/photos/bfosh/sets/72157637640405973/
 
 [my-blog]: http://www.gingilipino.com/brian/solar-data-collection.html
 
