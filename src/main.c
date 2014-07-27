@@ -16,8 +16,8 @@ int main(int argc, char **argv)
 
   pthread_t thread[2];
 
-  pthread_create(&thread[0], NULL, collectData, (void *)1);
-  pthread_create(&thread[1], NULL, sendLoop, (void *)1);
+  pthread_create(&thread[1], NULL, collectData, (void *)1);
+  pthread_create(&thread[2], NULL, sendLoop, (void *)1);
 
   pthread_join(thread[0], NULL);
   pthread_join(thread[1], NULL);
