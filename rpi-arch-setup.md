@@ -54,6 +54,7 @@ ldconfig
 - WiFi
   - `wifi-menu``
   - `wpa_passphrase SSID password`
-  -  In /etc/netctl/wlan--SSID Replace value in Key= with returned value of psk in above command, adding \" to the beginning
+  -  In /etc/netctl/wlan--SSID Replace value in Key= with returned value of psk in above command, adding `\"` to the beginning
   - `netctl start wlan0-SSID`
+  - Remove any existing wlan0-xyz in netctl's startup folder
   - `netctl enable wlan0-SSID`
