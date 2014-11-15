@@ -201,6 +201,7 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
     }
     freeReplyObject(tmpReply);
     tmpReply = redisCommand(c, "HDEL solar:%s %s", key, tstamp);
+
   switch (tmpReply->type) {
     case REDIS_REPLY_STATUS: {
       printf("Received Str %s\n", tmpReply->str);
