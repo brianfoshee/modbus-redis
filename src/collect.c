@@ -65,6 +65,7 @@ void setData(char *key, float val, int t, redisContext *c) {
 
   reply = redisCommand(c ,"HSET solar:%s %d %f",key, t, val);
 
+  /*
   switch (reply->type) {
     case REDIS_REPLY_STATUS: {
       printf("Received Str %s\n", reply->str);
@@ -94,8 +95,9 @@ void setData(char *key, float val, int t, redisContext *c) {
       break;
     }
   }
+  */
 
-  printf("command: HSET %s %d to %f\n",key, t, val);
+  //printf("command: HSET %s %d to %f\n",key, t, val);
 
   freeReplyObject(reply);
 }
@@ -117,75 +119,75 @@ void handleData(uint16_t *data, int t, redisContext *c) {
   setData("adc_vl_f", data[2] * 100.0 / 32768.0, t, c);
 
   // Charging current to the battery
-	setData("adc_ic_f", data[3] * 79.16 / 32768.0, t, c);
+  setData("adc_ic_f", data[3] * 79.16 / 32768.0, t, c);
 
   // Load current to load
-	setData("adc_il_f", data[4] * 79.16 / 32768.0, t, c);
+  setData("adc_il_f", data[4] * 79.16 / 32768.0, t, c);
 
   // Heatsink temp
-	setData("T_hs", data[5], t, c);
+  setData("T_hs", data[5], t, c);
 
   // Ambient temp (builtin)
-	setData("T_amb", data[7], t, c);
+  setData("T_amb", data[7], t, c);
 
   // Charge state (nums in ref)
-	setData("charge_state", data[9], t, c);
+  setData("charge_state", data[9], t, c);
 
   // Battery Voltage (slow filtered)
-	setData("Vb_f",data[11]*100.0/32768.0, t, c);
+  setData("Vb_f",data[11]*100.0/32768.0, t, c);
 
   // Target voltage to which battery will be charged (temp compensated)
-	setData("Vb_ref", data[12]*96.667/32768.0, t, c);
+  setData("Vb_ref", data[12]*96.667/32768.0, t, c);
 
   // Solar amp-hours since last reset
   // Reset-able
-	setData("Ahc_r", ((data[13] << 16) + data[14])*0.1, t, c);
+  setData("Ahc_r", ((data[13] << 16) + data[14])*0.1, t, c);
 
   // Solar amp-hours since last reset
   // cumulative
-	setData("Ahc_t",((data[15] << 16) + data[16])*0.1, t, c);
+  setData("Ahc_t",((data[15] << 16) + data[16])*0.1, t, c);
 
   // Total solar kWh since last reset
   // reset-able
-	setData("kWhc",data[17]*0.1, t, c);
+  setData("kWhc",data[17]*0.1, t, c);
 
   // Low voltage disconnect setpoint, current compensated
-	setData("V_lvd", data[20]*100.0/32768.0, t, c);
+  setData("V_lvd", data[20]*100.0/32768.0, t, c);
 
   // Load amp-hours since last reset
   // Resetable
-	setData("Ahl_r", ((data[21] << 16) + data[22])*0.1, t, c);
+  setData("Ahl_r", ((data[21] << 16) + data[22])*0.1, t, c);
 
   // Load amp hours
   // Total cumulative
-	setData("Ahl_t", ((data[23] << 16) + data[24])*0.1, t, c);
+  setData("Ahl_t", ((data[23] << 16) + data[24])*0.1, t, c);
 
   // Total hours of operation since installed
-	setData("hourmeter", (data[25] << 16) + data[26], t, c);
+  setData("hourmeter", (data[25] << 16) + data[26], t, c);
 
   // Output power to the battery
-	setData("Power_out", data[31]*989.5/65536.0, t, c);
+  setData("Power_out", data[31]*989.5/65536.0, t, c);
 
   // Max power voltage of the solar array during last sweep
-	setData("Sweep_Vmp", data[32]*100.0/32768.0, t, c);
+  setData("Sweep_Vmp", data[32]*100.0/32768.0, t, c);
 
   // max power output of solar array during last sweep
-	setData("Sweep_Pmax",data[33]*989.5/65536.0, t, c);
+  setData("Sweep_Pmax",data[33]*989.5/65536.0, t, c);
 
   // Open circuit voltage of solar array during last sweep
-	setData("Sweep_Voc", data[34]*100.0/32768.0, t, c);
+  setData("Sweep_Voc", data[34]*100.0/32768.0, t, c);
 
   // Minimum battery voltage (resets after dark)
-	setData("Vb_min_daily",data[35]*100.0/32768.0, t, c);
+  setData("Vb_min_daily",data[35]*100.0/32768.0, t, c);
 
   // Maximum battery voltage (resets after dark)
-	setData("Vb_max_daily", data[36]*100.0/32768.0, t, c);
+  setData("Vb_max_daily", data[36]*100.0/32768.0, t, c);
 
   // Total charging amp-hours today (resets after dark)
-	setData("Ahc_daily", data[37]*0.1, t, c);
+  setData("Ahc_daily", data[37]*0.1, t, c);
 
   // Total load amp hours today (resets after dark)
-	setData("Ahl_daily", data[38]*0.1, t, c);
+  setData("Ahl_daily", data[38]*0.1, t, c);
 
   free(data);
 }

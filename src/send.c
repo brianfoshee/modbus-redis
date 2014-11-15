@@ -201,6 +201,35 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
     }
     freeReplyObject(tmpReply);
     tmpReply = redisCommand(c, "HDEL solar:%s %s", key, tstamp);
+  switch (tmpReply->type) {
+    case REDIS_REPLY_STATUS: {
+      printf("Received Str %s\n", tmpReply->str);
+      break;
+    }
+    case REDIS_REPLY_ERROR: {
+      printf("Received Error %s\n", tmpReply->str);
+      break;
+    }
+    case REDIS_REPLY_INTEGER: {
+      printf("Received Integer %lld\n", tmpReply->integer);
+      break;
+    }
+    case REDIS_REPLY_NIL: {
+      printf("Received nil reply\n");
+      break;
+    }
+    case REDIS_REPLY_STRING: {
+      printf("Received Reply Str %s\n", tmpReply->str);
+      break;
+    }
+    case REDIS_REPLY_ARRAY: {
+      printf("Received array of elements\n");
+      break;
+    }
+    default: {
+      break;
+    }
+  }
     freeReplyObject(tmpReply);
   }
   // add the json obj for this key to the base obj
