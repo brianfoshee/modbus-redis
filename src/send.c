@@ -19,7 +19,6 @@
 #include <curl/curl.h>
 #include <json-c/json.h>
 
-#define NUMTHREADS 2
 #define PERSIST_URL  "http://192.168.1.119:8080/readings" // URL to send data to
 
 struct ThreadData {
@@ -30,7 +29,7 @@ struct ThreadData {
 };
 
 void* processKeys(void *td);
-void processKey(char *key, char **tstamps, size_t, json_object *);
+void processKey(char *key, char **tstamps, size_t, json_object *, redisContext *);
 void handle_reply(redisReply *reply);
 
 void sendData(void) {
@@ -38,11 +37,10 @@ void sendData(void) {
   char **keys, **tstamps, *key;
   const char *jsonStr;
   redisReply *keysReply, *tstampReply;
-  struct ThreadData data[NUMTHREADS];
-  pthread_t thread[NUMTHREADS];
   json_object *baseObj;
   redisContext *c;
   FILE *f;
+  int j, len;
 
   c = redis_conn();
   baseObj = json_object_new_object();
@@ -50,20 +48,20 @@ void sendData(void) {
   keysReply = redisCommand(c, "keys solar:*");
   numKeys = (int) keysReply->elements;
   numTstamps = (int) tstampReply->elements;
-  jobsPerThread = (numKeys + NUMTHREADS - 1) / NUMTHREADS;
   keys = malloc(numKeys * sizeof(char*));
   tstamps = malloc(numTstamps * sizeof(char*));
 
   fprintf(stdout, "Number of keys %d\n", numKeys);
   fprintf(stdout, "Number of tstamps %d\n", numTstamps);
-  fprintf(stdout, "Jobs per thread %d\n", jobsPerThread);
+  fflush(stdout);
 
   // Fill the keys array with all keys
   for (i = 0; i < numKeys; i++)
   {
     key = keysReply->element[i]->str;
-    keys[i] = malloc(strlen(key) * sizeof(char*));
-    strncpy(keys[i], key, strlen(key));
+    len = strlen(key) - strlen("solar:");
+    keys[i] = malloc(len * sizeof(char*));
+    strncpy(keys[i], &key[strlen("solar:")], strlen(key));
   }
 
   // Fill the tstamps array with all timestamps
@@ -74,35 +72,9 @@ void sendData(void) {
     strncpy(tstamps[i], key, strlen(key));
   }
 
-  // Go ahead and free the redis objects
-  freeReplyObject(tstampReply);
-  freeReplyObject(keysReply);
-
-  for (i = 0; i < NUMTHREADS; i++)
-  {
-    data[i].start = i * jobsPerThread;
-    data[i].stop = (i + 1) * jobsPerThread;
-    data[i].size = numTstamps;
-    data[i].keys = keys;
-    data[i].tstamps = tstamps;
-    data[i].baseObj = baseObj;
-
-    if (data[i].stop > numKeys)
-      data[i].stop = numKeys;
-  }
-
-  for (i = 0; i < NUMTHREADS; i++)
-  {
-    pthread_create(&thread[i], NULL, processKeys, &data[i]);
-  }
-
-  for (i = 0; i < NUMTHREADS; i++)
-  {
-    pthread_join(thread[i], NULL);
-  }
-
   for (i = 0; i < numKeys; i++)
   {
+    processKey(keys[i], tstamps, numTstamps, baseObj, c);
     free(keys[i]);
   }
 
@@ -113,6 +85,8 @@ void sendData(void) {
     free(tstamps[i]);
   }
 
+  // Go ahead and free the redis objects
+  freeReplyObject(keysReply);
   free(keys);
   free(tstamps);
 
@@ -129,6 +103,7 @@ void sendData(void) {
   }
 
   fprintf(f, "%s\n", jsonStr);
+  fflush(f);
 
   curl_global_init(CURL_GLOBAL_SSL);
 
@@ -150,45 +125,18 @@ void sendData(void) {
   fclose(f);
 }
 
-void* processKeys(void *td)
-{
-  struct ThreadData* data = td;
-  int start = data->start;
-  int stop = data->stop;
-  size_t size = data->size;
-  char **keys = data->keys;
-  char **tstamps = data->tstamps;
-  json_object *baseObj = data->baseObj;
-  int i, j, len;
-  char *key, *tmp;
-
-  fprintf(stdout, "Processing %d to %d\n", start, stop);
-
-  // Keys are prefixed with 'solar:'. This removes that prefix.
-  for (i = start; i < stop; i++) {
-    tmp = keys[i];
-    len = strlen(tmp) - strlen("solar:");
-    key = malloc(sizeof(char *) * len);
-    memcpy(&key[0], &tmp[6], len);
-    processKey(key, tstamps, size, baseObj);
-    free(key);
-  }
-
-  return NULL;
-}
-
-void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
+void processKey(char *key, char **tstamps, size_t size, json_object *baseObj, redisContext *c)
 {
   json_object *powerobj, *r_dbl;
   redisReply *tmpReply;
   char *val, *tstamp;
-  redisContext *c;
 
   fprintf(stdout, "Processing key %s\n", key);
+  fflush(stdout);
 
-  c = redis_conn();
   powerobj = json_object_new_object();
 
+  // iterate over all the timestamps
   for (int j = 0; j < (int) size; j++) {
     tstamp = tstamps[j];
     // get the value for this timestamp
@@ -202,38 +150,8 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
     freeReplyObject(tmpReply);
     tmpReply = redisCommand(c, "HDEL solar:%s %s", key, tstamp);
 
-  switch (tmpReply->type) {
-    case REDIS_REPLY_STATUS: {
-      printf("Received Str %s\n", tmpReply->str);
-      break;
-    }
-    case REDIS_REPLY_ERROR: {
-      printf("Received Error %s\n", tmpReply->str);
-      break;
-    }
-    case REDIS_REPLY_INTEGER: {
-      printf("Received Integer %lld\n", tmpReply->integer);
-      break;
-    }
-    case REDIS_REPLY_NIL: {
-      printf("Received nil reply\n");
-      break;
-    }
-    case REDIS_REPLY_STRING: {
-      printf("Received Reply Str %s\n", tmpReply->str);
-      break;
-    }
-    case REDIS_REPLY_ARRAY: {
-      printf("Received array of elements\n");
-      break;
-    }
-    default: {
-      break;
-    }
-  }
     freeReplyObject(tmpReply);
   }
   // add the json obj for this key to the base obj
   json_object_object_add(baseObj, key, powerobj);
-  redis_disconn(c);
 }
