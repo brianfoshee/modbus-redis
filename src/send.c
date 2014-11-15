@@ -93,6 +93,7 @@ void sendData(void) {
   redis_disconn(c);
 
   jsonStr = json_object_to_json_string(baseObj);
+  json_object_put(baseObj);
 
   f = fopen("/tmp/out.json", "w");
 

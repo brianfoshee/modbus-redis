@@ -36,6 +36,8 @@ void* collectData(void* td)
 
     handleData(data, t, r_ctx);
 
+    free(data);
+
     sleep(5);
   }
 
@@ -63,41 +65,7 @@ uint16_t * read_data(modbus_t *ctx) {
 void setData(char *key, float val, int t, redisContext *c) {
   redisReply *reply;
 
-  reply = redisCommand(c ,"HSET solar:%s %d %f",key, t, val);
-
-  /*
-  switch (reply->type) {
-    case REDIS_REPLY_STATUS: {
-      printf("Received Str %s\n", reply->str);
-      break;
-    }
-    case REDIS_REPLY_ERROR: {
-      printf("Received Error %s\n", reply->str);
-      break;
-    }
-    case REDIS_REPLY_INTEGER: {
-      printf("Received Integer %lld\n", reply->integer);
-      break;
-    }
-    case REDIS_REPLY_NIL: {
-      printf("Received nil reply\n");
-      break;
-    }
-    case REDIS_REPLY_STRING: {
-      printf("Received Reply Str %s\n", reply->str);
-      break;
-    }
-    case REDIS_REPLY_ARRAY: {
-      printf("Received array of elements\n");
-      break;
-    }
-    default: {
-      break;
-    }
-  }
-  */
-
-  //printf("command: HSET %s %d to %f\n",key, t, val);
+  reply = redisCommand(c, "HSET solar:%s %d %f", key, t, val);
 
   freeReplyObject(reply);
 }
@@ -191,8 +159,6 @@ void handleData(uint16_t *data, int t, redisContext *c) {
 
   // Total load amp hours today (resets after dark)
   setData("Ahl_daily", data[38]*0.1, t, c);
-
-  free(data);
 }
 
 void termHandler(int dum) {
