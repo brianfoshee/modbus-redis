@@ -108,6 +108,8 @@ void sendData(void) {
 
   for (i = 0; i < numTstamps; i++)
   {
+    tstampReply = redisCommand(c, "srem timestamps %s", tstamps[i]);
+    freeReplyObject(tstampReply);
     free(tstamps[i]);
   }
 
@@ -197,6 +199,8 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj)
       r_dbl = json_object_new_double(atof(val));
       json_object_object_add(powerobj, tstamp, r_dbl);
     }
+    freeReplyObject(tmpReply);
+    tmpReply = redisCommand(c, "HDEL solar:%s %s", key, tstamp);
     freeReplyObject(tmpReply);
   }
   // add the json obj for this key to the base obj
