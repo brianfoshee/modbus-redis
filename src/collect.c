@@ -109,6 +109,9 @@ void handleData(uint16_t *data, int t, redisContext *c) {
   reply = redisCommand(c, "SADD timestamps %d", t);
   freeReplyObject(reply);
 
+  fprintf(stdout, "Handling Data at %d\n", t);
+  fflush(stdout);
+
   // Voltage measured directly at the battery terminal
   setData("adc_vb_f", data[0] * 100.0 / 32768.0, t, c);
 
