@@ -5,7 +5,7 @@ After=redis.service
 
 [Service]
 Type=simple
-ExecStart=/home/brian/modbus-redis/sunsaver
+ExecStart=/root/modbus-redis/sunsaver
 
 [Install]
 WantedBy=multi-user.target
