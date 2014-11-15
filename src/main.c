@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 void* sendLoop(void *td) {
   while (running)
   {
-    sleep(1 * 60);
+    sleep(5 * 60);
     sendData();
   }
 
