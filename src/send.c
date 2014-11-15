@@ -20,6 +20,7 @@
 #include <json-c/json.h>
 
 #define NUMTHREADS 2
+#define PERSIST_URL  "http://192.168.1.119:8080/readings" // URL to send data to
 
 struct ThreadData {
   int start, stop;

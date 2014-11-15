@@ -14,13 +14,12 @@
 #ifdef __APPLE__
   #define SERIALPORT      "/dev/tty.usbserial-AD026B5W"
 #elif __linux
-  #define SERIALPORT      "/dev/ttyAMA0"
+  #define SERIALPORT      "/dev/ttyUSB0" // or AMA0 if GPIO
 #endif
 
 #define REDIS_SERVER    "127.0.0.1"     // Redis server host
 #define REDIS_PORT      6379            // Redis server port
 #define REDIS_PREFIX    "solar"         // prefix to add in front of keys
-#define PERSIST_URL  "http://192.168.1.8:9292/readings" // URL to send data to
 
 // Open and close Redis Connection
 redisContext* redis_conn(void);
