@@ -23,6 +23,7 @@ redisContext* redis_conn(void) {
 
 void redis_disconn(redisContext *c) {
   redisFree(c);
+  fprintf(stdout, "Redis Disconnected\n");
 }
 
 modbus_t * modbus_conn(void) {
