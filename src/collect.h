@@ -3,6 +3,6 @@
 
 #include "connection.h"
 
-void* collectData(void*);
+void collectData(void);
 
 #endif

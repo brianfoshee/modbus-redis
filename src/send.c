@@ -13,98 +13,90 @@
 }
 */
 
-#include "send.h"
-#include <pthread.h>
+/*
+ * Should change to:
+ * {
+ *   "194829148": {
+ *     "adc_va_f": 12.5
+ *   }
+ * }
+ *
+ * */
 
+#include "send.h"
+
+#include <unistd.h>
 #include <curl/curl.h>
 #include <json-c/json.h>
 
-#define PERSIST_URL  "http://192.168.1.119:8080/readings" // URL to send data to
-
-struct ThreadData {
-  int start, stop;
-  size_t size;
-  json_object *baseObj;
-  char **keys, **tstamps;
-};
+#define PERSIST_URL  "http://10.10.10.164:8080/readings" // URL to send data to
 
 void* processKeys(void *td);
 void processKey(char *key, char **tstamps, size_t, json_object *, redisContext *);
 void handle_reply(redisReply *reply);
 
 void sendData(void) {
-  int numKeys, numTstamps, i, skip, start, stop, jobsPerThread;
+  long numTstamps, numKeys, i;
   char **keys, **tstamps, *key;
   const char *jsonStr;
-  redisReply *keysReply, *tstampReply;
+  redisReply *reply;
   json_object *baseObj;
   redisContext *c;
-  FILE *f;
-  int j, len;
+  unsigned long len;
 
   c = redis_conn();
   baseObj = json_object_new_object();
-  tstampReply = redisCommand(c, "smembers timestamps");
-  keysReply = redisCommand(c, "keys solar:*");
-  numKeys = (int) keysReply->elements;
-  numTstamps = (int) tstampReply->elements;
-  keys = malloc(numKeys * sizeof(char*));
-  tstamps = malloc(numTstamps * sizeof(char*));
-
-  fprintf(stdout, "Number of keys %d\n", numKeys);
-  fprintf(stdout, "Number of tstamps %d\n", numTstamps);
-  fflush(stdout);
 
   // Fill the keys array with all keys
-  for (i = 0; i < numKeys; i++)
-  {
-    key = keysReply->element[i]->str;
+  reply = redisCommand(c, "keys solar:*");
+  numKeys = (long) reply->elements;
+  keys = malloc(numKeys * sizeof(char*));
+  fprintf(stdout, "Number of keys %lu\n", numKeys);
+  fflush(stdout);
+  for (i = 0; i < numKeys; i++) {
+    key = reply->element[i]->str;
     len = strlen(key) - strlen("solar:");
     keys[i] = malloc(len * sizeof(char*));
     strncpy(keys[i], &key[strlen("solar:")], strlen(key));
   }
+  freeReplyObject(reply);
+  reply = NULL;
 
   // Fill the tstamps array with all timestamps
-  for (i = 0; i < numTstamps; i++)
-  {
-    key = tstampReply->element[i]->str;
+  reply = redisCommand(c, "smembers timestamps");
+  numTstamps = (long) reply->elements;
+  tstamps = malloc(numTstamps * sizeof(char*));
+  fprintf(stdout, "Number of tstamps %lu\n", numTstamps);
+  fflush(stdout);
+  for (i = 0; i < numTstamps; i++) {
+    key = reply->element[i]->str;
     tstamps[i] = malloc(strlen(key) * sizeof(char*));
     strncpy(tstamps[i], key, strlen(key));
   }
+  freeReplyObject(reply);
+  reply = NULL;
 
-  for (i = 0; i < numKeys; i++)
-  {
+  for (i = 0; i < numKeys; i++) {
     processKey(keys[i], tstamps, numTstamps, baseObj, c);
     free(keys[i]);
+    keys[i] = NULL;
   }
-
-  for (i = 0; i < numTstamps; i++)
-  {
-    tstampReply = redisCommand(c, "srem timestamps %s", tstamps[i]);
-    freeReplyObject(tstampReply);
-    free(tstamps[i]);
-  }
-
-  // Go ahead and free the redis objects
-  freeReplyObject(keysReply);
   free(keys);
+  keys = NULL;
+
+  for (i = 0; i < numTstamps; i++) {
+    reply = redisCommand(c, "srem timestamps %s", tstamps[i]);
+    freeReplyObject(reply);
+    free(tstamps[i]);
+    tstamps[i] = NULL;
+  }
   free(tstamps);
+  tstamps = NULL;
 
   redis_disconn(c);
+  c = NULL;
 
-  jsonStr = json_object_to_json_string(baseObj);
-  json_object_put(baseObj);
-
-  f = fopen("/tmp/out.json", "w");
-
-  if (f == NULL)
-  {
-      printf("Error opening file!\n");
-      exit(1);
-  }
-
-  fprintf(f, "%s\n", jsonStr);
-  fflush(f);
+  jsonStr = json_object_to_json_string_ext(baseObj, JSON_C_TO_STRING_PLAIN);
 
   curl_global_init(CURL_GLOBAL_SSL);
 
@@ -120,14 +112,20 @@ void sendData(void) {
   curl_easy_setopt(handle, CURLOPT_POSTFIELDS, jsonStr);
 
   CURLcode code = curl_easy_perform(handle);
+  /* Check for errors */
+  if(code != CURLE_OK) {
+    fprintf(stdout, "curl_easy_perform() failed: %s\n",
+        curl_easy_strerror(code));
+  }
   curl_slist_free_all(headers);
+  curl_easy_cleanup(handle);
   curl_global_cleanup();
 
-  fclose(f);
+  json_object_put(baseObj);
+  baseObj = NULL;
 }
 
-void processKey(char *key, char **tstamps, size_t size, json_object *baseObj, redisContext *c)
-{
+void processKey(char *key, char **tstamps, size_t size, json_object *baseObj, redisContext *c) {
   json_object *powerobj, *r_dbl;
   redisReply *tmpReply;
   char *val, *tstamp;
@@ -149,8 +147,8 @@ void processKey(char *key, char **tstamps, size_t size, json_object *baseObj, re
       json_object_object_add(powerobj, tstamp, r_dbl);
     }
     freeReplyObject(tmpReply);
-    tmpReply = redisCommand(c, "HDEL solar:%s %s", key, tstamp);
 
+    tmpReply = redisCommand(c, "HDEL solar:%s %s", key, tstamp);
     freeReplyObject(tmpReply);
   }
   // add the json obj for this key to the base obj

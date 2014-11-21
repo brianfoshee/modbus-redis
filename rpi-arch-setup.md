@@ -58,3 +58,7 @@ ldconfig
   - `netctl start wlan0-SSID`
   - Remove any existing wlan0-xyz in netctl's startup folder
   - `netctl enable wlan0-SSID`
+
+- Systemctl service for sunsaver
+  - Copy `sunsaver.service` into /etc
+  - `systemctl enable sunsaver.service`
