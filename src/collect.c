@@ -79,19 +79,19 @@ void handleData(uint16_t *data, int t, redisContext *c) {
   fflush(stdout);
 
   // Voltage measured directly at the battery terminal
-  setData("adc_vb_f", data[0] * 100.0 / 32768.0, t, c);
+  setData("Adc_vb_f", data[0] * 100.0 / 32768.0, t, c);
 
   // Terminal voltage of solar
-  setData("adc_va_f", data[1] * 100.0 / 32768.0, t, c);
+  setData("Adc_va_f", data[1] * 100.0 / 32768.0, t, c);
 
   // Terminal voltage of load
-  setData("adc_vl_f", data[2] * 100.0 / 32768.0, t, c);
+  setData("Adc_vl_f", data[2] * 100.0 / 32768.0, t, c);
 
   // Charging current to the battery
-  setData("adc_ic_f", data[3] * 79.16 / 32768.0, t, c);
+  setData("Adc_ic_f", data[3] * 79.16 / 32768.0, t, c);
 
   // Load current to load
-  setData("adc_il_f", data[4] * 79.16 / 32768.0, t, c);
+  setData("Adc_il_f", data[4] * 79.16 / 32768.0, t, c);
 
   // Heatsink temp
   setData("T_hs", data[5], t, c);
@@ -133,6 +133,9 @@ void handleData(uint16_t *data, int t, redisContext *c) {
 
   // Total hours of operation since installed
   setData("hourmeter", (data[25] << 16) + data[26], t, c);
+
+  // LED State
+  setData("led_state", data[30], t, c);
 
   // Output power to the battery
   setData("Power_out", data[31]*989.5/65536.0, t, c);
