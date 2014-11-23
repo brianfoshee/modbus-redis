@@ -49,12 +49,18 @@ void collectData(void)
 /* WARNING: caller is responsible for free()ing return value! */
 uint16_t * read_data(modbus_t *ctx) {
 	/* Read the RAM Registers */
-  // TODO: Read in two separate requests because of limitations with MODBUS
   int rc;
-  uint16_t *data = malloc(sizeof(uint16_t) * 50);
-	rc = modbus_read_registers(ctx, 0x08, 45, data);
+  uint16_t *data = malloc(sizeof(uint16_t) * 44);
+  // Read in the first half of registers
+	rc = modbus_read_registers(ctx, 0x08, 22, data);
 	if (rc == -1) {
-		fprintf(stderr, "Modbus Error: %s\n", modbus_strerror(errno));
+		fprintf(stderr, "Modbus Error (first half): %s\n", modbus_strerror(errno));
+		exit(-1);
+	}
+  // Read in the second half of registers
+	rc = modbus_read_registers(ctx, 0x08, 22, data+22);
+	if (rc == -1) {
+		fprintf(stderr, "Modbus Error (second half):%s\n", modbus_strerror(errno));
 		exit(-1);
 	}
   return data;
@@ -75,8 +81,8 @@ void handleData(uint16_t *data, int t, redisContext *c) {
   reply = redisCommand(c, "SADD timestamps %d", t);
   freeReplyObject(reply);
 
-  fprintf(stdout, "Handling Data at %d\n", t);
-  fflush(stdout);
+  //fprintf(stdout, "Handling Data at %d\n", t);
+  //fflush(stdout);
 
   // Voltage measured directly at the battery terminal
   setData("Adc_vb_f", data[0] * 100.0 / 32768.0, t, c);
@@ -96,11 +102,20 @@ void handleData(uint16_t *data, int t, redisContext *c) {
   // Heatsink temp
   setData("T_hs", data[5], t, c);
 
+  // Battery temp
+  setData("T_batt", data[6], t, c);
+
   // Ambient temp (builtin)
   setData("T_amb", data[7], t, c);
 
+  // Remote battery temp sensor (0x08 if not connected)
+  setData("T_rts", data[8], t, c);
+
   // Charge state (nums in ref)
   setData("charge_state", data[9], t, c);
+
+  // Array fault bitfield
+  setData("array_fault", data[10], t, c);
 
   // Battery Voltage (slow filtered)
   setData("Vb_f",data[11]*100.0/32768.0, t, c);
@@ -120,6 +135,12 @@ void handleData(uint16_t *data, int t, redisContext *c) {
   // reset-able
   setData("kWhc",data[17]*0.1, t, c);
 
+  // Load state
+  setData("load_state", data[18], t, c);
+
+  // Load fault
+  setData("load_fault", data[19], t, c);
+
   // Low voltage disconnect setpoint, current compensated
   setData("V_lvd", data[20]*100.0/32768.0, t, c);
 
@@ -133,6 +154,12 @@ void handleData(uint16_t *data, int t, redisContext *c) {
 
   // Total hours of operation since installed
   setData("hourmeter", (data[25] << 16) + data[26], t, c);
+
+  // Alarm
+  setData("alarm", (data[27] << 16) + (data[28] << 16), t, c);
+
+  // DIP switch
+  setData("dip_switch", data[29], t, c);
 
   // LED State
   setData("led_state", data[30], t, c);
@@ -160,6 +187,21 @@ void handleData(uint16_t *data, int t, redisContext *c) {
 
   // Total load amp hours today (resets after dark)
   setData("Ahl_daily", data[38]*0.1, t, c);
+
+  // Array fault daily
+  setData("array_fault_daily", data[39], t, c);
+
+  // Load fault daily
+  setData("load_fault_daily", data[40], t, c);
+
+  // alarm daily
+  setData("alarm_daily", (data[41] << 16) + (data[42] << 16), t, c);
+
+  // min battery voltage
+  setData("vb_min", data[43], t, c);
+
+  // Max battery voltage
+  setData("vb_max", data[44], t, c);
 }
 
 void termHandler(int dum) {

@@ -1,14 +1,11 @@
 HEADER_PATHS = -I/usr/local/include -L/usr/local/lib
-LIBS = -lmodbus -lcurl -lhiredis -ljson-c -lpthread
+LIBS = -lmodbus -lhiredis
 CFLAGS = -std=c99
 
 all: sunsaver
 
-sunsaver: connection send collect
-	cc ${CFLAGS} ${HEADER_PATHS} ${LIBS} src/main.c build/send.o build/collect.o build/connection.o -o sunsaver
-
-send: connection
-	cc ${CFLAGS} -c src/send.c -o build/send.o
+sunsaver: connection collect
+	cc ${CFLAGS} ${HEADER_PATHS} ${LIBS} src/main.c build/collect.o build/connection.o -o sunsaver
 
 collect: connection
 	cc ${CFLAGS} -c src/collect.c -o build/collect.o
