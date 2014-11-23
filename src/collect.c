@@ -57,6 +57,7 @@ uint16_t * read_data(modbus_t *ctx) {
 		fprintf(stderr, "Modbus Error (first half): %s\n", modbus_strerror(errno));
 		exit(-1);
 	}
+  sleep(1);
   // Read in the second half of registers
 	rc = modbus_read_registers(ctx, 0x1E, 22, data+22);
 	if (rc == -1) {
