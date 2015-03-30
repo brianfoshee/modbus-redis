@@ -1,4 +1,6 @@
+<!--- Not live right now
 [Blog post] [my-blog]
+-->
 
 [A few images of the setup] [flikr-set]
 
@@ -6,8 +8,7 @@ Reading data from a Morningstar Sunsaver MPPT and storing it in Redis.
 
 Starting point for what will be a system to monitor and view solar/charging data.
 
-Since inception, many improvements have been made to this project. It pulls data every 5 seconds then can send it
-to a remote server in JSON format to be stored and analyzed in postgres.
+Since inception, many improvements have been made to this project. It pulls data every 5 seconds, stores it to Redis, then can send it to a remote server as JSON to be stored and analyzed.
 
 This runs on a Raspberry Pi. Requires [hiredis] [hired] and [libmodbus] [libmod].
 
@@ -18,8 +19,8 @@ To setup a Raspberry Pi with Arch Linux see [rpi-arch-setup] [arch-setup]
 Work to improve this:
 
 - Send data to an app on Heroku (collecting every 5 seconds generates a bunch of Redis keys)
-  - [Sinatra app for this here] [solar-collector]
-- Visualize with D3 (realtime and archived)
+  - Go app in progress
+- Visualize with d3 (realtime and archived)
 - Clean up collect.c
   - DRY up data accessing and number conversions
 
